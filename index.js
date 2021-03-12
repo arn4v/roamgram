@@ -1,13 +1,6 @@
 const TelegramBotApi = require("node-telegram-bot-api");
 const RoamResearchPrivateApi = require("roam-research-private-api");
 
-const generatorValidator = (id) => {
-  return (/** @type {TelegramBotApi.Message} */ message) => {
-    if (message.from.id === id) return true;
-    return false;
-  };
-};
-
 class RoamApi extends RoamResearchPrivateApi {
   async appendBlock(text, order = 0, uid) {
     const result = await this.page.evaluate(
@@ -31,11 +24,7 @@ class RoamApi extends RoamResearchPrivateApi {
   }
 }
 
-module.exports = async ({
-  token,
-  adminId,
-  roam: { graph, email, password },
-}) => {
+const main = async ({ token, adminId, roam: { graph, email, password } }) => {
   if (typeof adminId === "string") adminId = parseInt(adminId);
 
   const bot = new TelegramBotApi(token, { polling: true });
@@ -68,10 +57,13 @@ module.exports = async ({
           `[ :find (pull ?e [*]) :where [?e :node/title "${dailyNoteTitle}"]]`
         )
         .then((result) => {
-          return result[0][0].children.length;
+          try {
+            return result[0][0].children.length;
+          } catch {
+            return result[0].length;
+          }
         })
         .then((order) => {
-          console.log(order);
           roam
             .appendBlock(
               message.text.replace(/\/add /, ""),
@@ -79,7 +71,6 @@ module.exports = async ({
               dailyNoteId
             )
             .then((result) => {
-              console.log(result);
               if (result) {
                 bot.sendMessage(chatId, `Added text to Roam Daily Notes`);
               } else {
@@ -108,3 +99,37 @@ module.exports = async ({
     }
   });
 };
+
+module.exports = main;
+
+require("dotenv").config();
+
+(async () => {
+  [
+    "ROAM_GRAPH",
+    "ROAM_EMAIL",
+    "ROAM_PASSWORD",
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_ADMIN_ID",
+  ].forEach((key) => {
+    if (!process.env[key]) {
+      console.log(`${key} not found in env file.`);
+      process.exit(1);
+    }
+
+    if (key === "TELEGRAM_ADMIN_ID") {
+      if (typeof process.env[key] === "string")
+        process.env[key] = parseInt(process.env[key]);
+    }
+  });
+
+  await main({
+    token: process.env.TELEGRAM_BOT_TOKEN,
+    adminId: process.env.TELEGRAM_ADMIN_ID,
+    roam: {
+      graph: process.env.ROAM_GRAPH,
+      email: process.env.ROAM_EMAIL,
+      password: process.env.ROAM_PASSWORD,
+    },
+  });
+})().catch((err) => console.log(err));

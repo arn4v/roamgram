@@ -3,16 +3,19 @@
   "version": "0.1.0",
   "description": "Add Notes To Roam Research using Telegram",
   "main": "index.js",
-  "bin": {
-    "roamgram": "cli.js"
-  },
+  "license": "MIT",
+  "author": "Arnav Gosain <arnav@arnavgosain.com>",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "nodemon -w index.js index.js"
   },
   "dependencies": {
-    "arg": "^5.0.0",
+    "dotenv": "^8.2.0",
     "node-telegram-bot-api": "^0.51.0",
     "pm2": "^4.5.5",
     "roam-research-private-api": "^0.9.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
   }
 }
